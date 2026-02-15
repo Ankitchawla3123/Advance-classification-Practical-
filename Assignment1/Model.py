@@ -11,6 +11,15 @@ from sklearn.datasets import load_breast_cancer
 
 from sklearn.preprocessing import LabelEncoder
 
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
+import random
+
+
+
 
 class Binclassification:
     def __init__(self,X,y,numcol,catcol):
@@ -18,9 +27,10 @@ class Binclassification:
         self.y = y
         self.numcol = numcol
         self.catcol = catcol
-        self.simulation_result=None
-        self.data_sim_one=None
-        self.data_sim_n=None
+        self.simulation_result_n={}
+        self.simulation_result_one={}
+        self.data_sim_one={}
+        self.data_sim_n={}
         self.validate_and_assign_columns()
         
         
@@ -147,23 +157,102 @@ class Binclassification:
         x_test_final  = Cat_transformation.transform(X_test_scaled)
         
         return x_train_final,x_test_final,y_train_res,y_test
+    
+    
+    
+    def _run_simulation(self, EncodeCat, EncodeLabel, seed, sampling):
+        X_train, X_test, y_train, y_test = self.preprocess(EncodeCat,EncodeLabel,seed,sampling)
 
+        results = {}
 
-
-    def simulate(self,EncodeCat=False,EncodeLabel=False,seed=42,sampling=2):
-        X_train, X_test, y_train, y_test=self.preprocess(EncodeCat,EncodeLabel,seed,sampling)
-        self.data_sim_one={
-            f'seed {seed}':{
-                "X_train":X_train,
-                "X_test":X_test,
-                "y_train":y_train,
-                "y_test":y_test
-            }
+        models = {
+            "LogisticRegression": (
+                LogisticRegression(max_iter=5000),
+                {
+                    'C': np.logspace(-4, 4, 20),
+                    "penalty": ["l1", "l2"],
+                    "solver": ["liblinear"]
+                }
+            ),
+            "SVC": (
+                SVC(),
+                {
+                    'C': [0.1, 1, 10],
+                    'gamma': [0.01, 0.1, 1],
+                    'kernel': ['linear', 'rbf', 'poly']
+                }
+            ),
+            "DecisionTree": (
+                DecisionTreeClassifier(),
+                {
+                    'max_depth': range(1, 15),
+                    'min_samples_leaf': range(1, 20, 2),
+                    'min_samples_split': range(2, 20, 2),
+                    'criterion': ["entropy", "gini"]
+                }
+            )
         }
+
+
+        for name, (model, params) in models.items():
+            print("inside the loop 1")
+            grid = GridSearchCV(
+                estimator=model,
+                param_grid=params,
+                cv=StratifiedKFold(10),
+                scoring='accuracy',
+                n_jobs=-1,
+                verbose=True
+            )
+
+            grid.fit(X_train, y_train)
+
+            results[name] = {
+                # "best_estimator": grid.best_estimator_,
+                "best_score": grid.best_score_,
+                "best_params": grid.best_params_
+            }
+            
+        data = {
+        "X_train":X_train,
+        "X_test":X_test,
+        "y_train":y_train,
+        "y_test":y_test
+        }
+        return data, results
+
+
+
+
+    def simulate_one(self, EncodeCat=False, EncodeLabel=False, seed=42, sampling=2):
+
+        data, results = self._run_simulation(
+            EncodeCat, EncodeLabel, seed, sampling
+        )
+
+        self.data_sim_one[f"seed {seed}"] = data
+        self.simulation_result_one[f"seed {seed}"] = results
+
+        # return results
         
-    def simulate_ntimes(self,n=5,EncodeCat=False,EncodeLabel=False,seed=42,sampling=2):
-        
-        
+            
+
+
+    
+    def simulate_ntimes(self, n=5, EncodeCat=False, EncodeLabel=False, sampling=2):
+
+        seeds = random.sample(range(1, 101), n)
+
+        for seed in seeds:
+
+            data, results = self._run_simulation(
+                EncodeCat, EncodeLabel, seed, sampling
+            )
+
+            self.data_sim_n[f"seed {seed}"] = data
+            self.simulation_result_n[f"seed {seed}"] = results
+
+        # return self.simulation_result_n
 
     # def preprocess(self, EncodeCat=False,EncodeLabel=False,seed=42,sampling=2):
 
