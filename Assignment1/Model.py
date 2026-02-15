@@ -115,7 +115,7 @@ class Binclassification:
             X_train_res,y_train_res=X_train_scaled,y_train
             
         elif sampling==1:
-            
+
             rus = RandomUnderSampler(sampling_strategy='majority')
             X_train_res, y_train_res = rus.fit_resample(X_train_scaled, y_train)
             
@@ -162,7 +162,7 @@ class Binclassification:
     
     def _run_simulation(self, EncodeCat, EncodeLabel, seed, sampling):
         X_train, X_test, y_train, y_test = self.preprocess(EncodeCat,EncodeLabel,seed,sampling)
-
+        
         results = {}
 
         models = {
@@ -179,7 +179,7 @@ class Binclassification:
                 {
                     'C': [0.1, 1, 10],
                     'gamma': [0.01, 0.1, 1],
-                    'kernel': ['linear', 'rbf', 'poly']
+                    'kernel': ['linear', 'rbf']
                 }
             ),
             "DecisionTree": (
