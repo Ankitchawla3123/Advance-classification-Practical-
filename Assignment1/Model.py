@@ -3,6 +3,8 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.pipeline import Pipeline,make_pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
+from sklearn.model_selection import train_test_split
+
 
 class Binclassification:
     def __init__(self):
@@ -10,9 +12,13 @@ class Binclassification:
         self.y
         self.numcol
         self.catcol
+        self.simulation_result
+        self.simulate_one_data
+        self.simulate_n_data
+        
 
     
-    def preprocess(self, EncodeCat=False,EncodeLabel=False,seed=42):
+    def preprocess(self, EncodeCat=False,EncodeLabel=False,seed=42,sampling=1):
         numeric_cols=[]
         cat_cols=[]
         for Num,Cat,Col in zip(self.numcol,self.catcol,self.X.columns.tolist()):
@@ -48,5 +54,8 @@ class Binclassification:
         
         x_train_std = preprocessor.fit_transform(x_train)
         x_test_std  = preprocessor.transform(x_test)
-        
-        
+    
+    def simulate():
+        pass
+    def simulate_ntimes():
+        pass
