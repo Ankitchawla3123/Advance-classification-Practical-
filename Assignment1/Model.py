@@ -145,15 +145,25 @@ class Binclassification:
         
         x_train_final = Cat_transformation.fit_transform(X_train_res)
         x_test_final  = Cat_transformation.transform(X_test_scaled)
+        
         return x_train_final,x_test_final,y_train_res,y_test
 
 
 
     def simulate(self,EncodeCat=False,EncodeLabel=False,seed=42,sampling=2):
-        self.preprocess(EncodeCat=False,EncodeLabel=False,seed=42,sampling=2)
+        X_train, X_test, y_train, y_test=self.preprocess(EncodeCat,EncodeLabel,seed,sampling)
+        self.data_sim_one={
+            f'seed {seed}':{
+                "X_train":X_train,
+                "X_test":X_test,
+                "y_train":y_train,
+                "y_test":y_test
+            }
+        }
         
-    def simulate_ntimes():
-        pass
+    def simulate_ntimes(self,n=5,EncodeCat=False,EncodeLabel=False,seed=42,sampling=2):
+        
+        
 
     # def preprocess(self, EncodeCat=False,EncodeLabel=False,seed=42,sampling=2):
 
