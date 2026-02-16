@@ -18,6 +18,15 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 import random
 
+from sklearn.metrics import (
+    accuracy_score,
+    recall_score,
+    precision_score,
+    f1_score,
+    roc_auc_score,
+    confusion_matrix
+)
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 
 
 
@@ -161,67 +170,109 @@ class Binclassification:
     
     
     def _run_simulation(self, EncodeCat, EncodeLabel, seed, sampling):
-        X_train, X_test, y_train, y_test = self.preprocess(EncodeCat,EncodeLabel,seed,sampling)
-        
-        results = {}
+            X_train, X_test, y_train, y_test = self.preprocess(EncodeCat,EncodeLabel,seed,sampling)
+            
+            results = {}
 
-        models = {
-            "LogisticRegression": (
-                LogisticRegression(max_iter=5000),
-                {
-                    'C': np.logspace(-4, 4, 20),
-                    "penalty": ["l1", "l2"],
-                    "solver": ["liblinear"]
-                }
-            ),
-            "SVC": (
-                SVC(),
-                {
-                    'C': [0.1, 1, 10],
-                    'gamma': [0.01, 0.1, 1],
-                    'kernel': ['linear', 'rbf']
-                }
-            ),
-            "DecisionTree": (
-                DecisionTreeClassifier(),
-                {
-                    'max_depth': range(1, 15),
-                    'min_samples_leaf': range(1, 20, 2),
-                    'min_samples_split': range(2, 20, 2),
-                    'criterion': ["entropy", "gini"]
-                }
-            )
-        }
-
-
-        for name, (model, params) in models.items():
-            print("inside the loop 1")
-            grid = GridSearchCV(
-                estimator=model,
-                param_grid=params,
-                cv=StratifiedKFold(10),
-                scoring='accuracy',
-                n_jobs=-1,
-                verbose=True
-            )
-
-            grid.fit(X_train, y_train)
-
-            results[name] = {
-                # "best_estimator": grid.best_estimator_,
-                "best_score": grid.best_score_,
-                "best_params": grid.best_params_
+            models = {
+                "LogisticRegression": (
+                    LogisticRegression(max_iter=5000),
+                    {
+                        'C': np.logspace(-4, 4, 20),
+                        "penalty": ["l1", "l2"],
+                        "solver": ["liblinear"]
+                    }
+                ),
+                "SVC": (
+                    SVC(probability=True),
+                    {
+                        'C': [0.1, 1, 10],
+                        'gamma': [0.01, 0.1, 1],
+                        'kernel': ['linear', 'rbf']
+                    }
+                ),
+                "DecisionTree": (
+                    DecisionTreeClassifier(),
+                    {
+                        'max_depth': range(1, 15),
+                        'min_samples_leaf': range(1, 20, 2),
+                        'min_samples_split': range(2, 20, 2),
+                        'criterion': ["entropy", "gini"]
+                    }
+                ),
+                "RandomForest": (
+                    RandomForestClassifier(),
+                    {
+                        'n_estimators': [100, 200, 300],
+                        'max_depth': [None, 5, 10, 20],
+                        'min_samples_split': [2, 5, 10],
+                        'min_samples_leaf': [1, 2, 4]
+                    }
+                ),
+                "AdaBoost": (
+                    AdaBoostClassifier(),
+                    {
+                        'n_estimators': [50, 100, 200],
+                        'learning_rate': [0.01, 0.1, 1]
+                    }
+                ),
             }
             
-        data = {
-        "X_train":X_train,
-        "X_test":X_test,
-        "y_train":y_train,
-        "y_test":y_test
-        }
-        return data, results
 
+            for name, (model, params) in models.items():
+                print("inside the loop 1")
 
+                grid = GridSearchCV(
+                    estimator=model,
+                    param_grid=params,
+                    cv=StratifiedKFold(10),
+                    scoring='accuracy',
+                    n_jobs=-1,
+                    verbose=True
+                )
+
+                grid.fit(X_train, y_train)
+
+                best_model = grid.best_estimator_
+
+                y_pred = best_model.predict(X_test)
+
+                if hasattr(best_model, "predict_proba"):
+                    y_prob = best_model.predict_proba(X_test)[:, 1]
+                else:
+                    y_prob = best_model.decision_function(X_test)
+
+                acc = accuracy_score(y_test, y_pred)
+                sensitivity = recall_score(y_test, y_pred)
+                precision = precision_score(y_test, y_pred)
+                f1 = f1_score(y_test, y_pred)
+                auc = roc_auc_score(y_test, y_prob)
+
+                tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+                specificity = tn / (tn + fp)
+
+                results[name] = {
+                    "best_estimator": grid.best_estimator_,
+                    "best_score": grid.best_score_,
+                    "best_params": grid.best_params_,
+                    "test_result": {
+                        "Accuracy": acc,
+                        "Sensitivity": sensitivity,
+                        "Specificity": specificity,
+                        "Precision": precision,
+                        "F1-score": f1,
+                        "AUC": auc
+                    }
+                }
+                
+            data = {
+            "X_train":X_train,
+            "X_test":X_test,
+            "y_train":y_train,
+            "y_test":y_test
+            }
+
+            return data, results
 
 
     def simulate_one(self, EncodeCat=False, EncodeLabel=False, seed=42, sampling=2):
