@@ -184,11 +184,11 @@ class Binclassification:
                     }
                 ),
                 "SVC": (
-                    SVC(probability=True),
+                    SVC(probability=True,max_iter=5000),
                     {
                         'C': [0.1, 1, 10],
                         'gamma': [0.01, 0.1, 1],
-                        'kernel': ['linear', 'rbf']
+                        'kernel': ['linear',"rbf"]
                     }
                 ),
                 "DecisionTree": (
